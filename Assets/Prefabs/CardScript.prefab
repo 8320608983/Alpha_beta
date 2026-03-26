@@ -133,7 +133,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 0.5424528, b: 0.5424528, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -285,3 +285,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b64cc918e0463946873ae53ab4f612f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardScript
+  frontSide: {fileID: 1906937591084911984}
+  backSide: {fileID: 2461021157416506065}
+  btnClick: {fileID: 6705050639326918266}
