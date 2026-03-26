@@ -5,19 +5,27 @@ using UnityEngine.UI;
 public class GridManager : MonoBehaviour
 {
     public static GridManager Instance;
-    public GridLayoutGroup grid;
-    public CardScript cardScript; 
+    [SerializeField] GridLayoutGroup grid;
+    [SerializeField] CardScript cardScript;
 
-    public int rows;
-    public int cols;
+    [SerializeField] int rows;
+    [SerializeField] int cols;
     private void Awake()
     {
         if (Instance == null) { Instance = this; }
     }
-    private void Start()
+    public void SetGrid()
     {
         ClearGrid();
         GenerateGrid();
+    }
+    public void StartGame(int rowCount, int colCount)
+    { 
+        rows = rowCount;
+        cols = colCount;
+        SetGrid();
+        UIManager.Instance.menuPanel.HideView();
+        UIManager.Instance.gamePlayPanel.ShowView();
     }
     void ClearGrid()
     {
@@ -34,7 +42,7 @@ public class GridManager : MonoBehaviour
         float height = rect.rect.height;
 
         float spacingX = grid.spacing.x;
-        float spacingY = grid.spacing.y; 
+        float spacingY = grid.spacing.y;
 
         float totalSpacingX = spacingX * (cols - 1);
         float totalSpacingY = spacingY * (rows - 1);
@@ -46,9 +54,9 @@ public class GridManager : MonoBehaviour
         grid.cellSize = new Vector2(size, size);
 
         grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        grid.constraintCount = cols; 
+        grid.constraintCount = cols;
 
-        for(int i = 0; i < cols * rows; i++)
+        for (int i = 0; i < cols * rows; i++)
         {
             CardScript obj = Instantiate(cardScript, grid.transform);
 
