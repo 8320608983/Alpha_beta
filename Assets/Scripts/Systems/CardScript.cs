@@ -20,12 +20,9 @@ public class CardScript : MonoBehaviour
         btnClick.onClick.AddListener(OnClick);
     }
     public void Setup()
-    {
-        
+    { 
         frontSide.SetActive(false);
-        backSide.SetActive(true);
-
-
+        backSide.SetActive(true); 
         isfliped = false; 
     }
 
