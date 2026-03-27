@@ -6,6 +6,9 @@ public class UIManager : MonoBehaviour
 
     [SerializeField] internal MenuPanel menuPanel;
     [SerializeField] internal GamePlayPanel gamePlayPanel;
+    [SerializeField] internal GameOverPanel gameOverPanel;
+
+    [SerializeField] GameObject[] panels; 
     private void Awake()
     {
         if (Instance == null) { Instance = this; }
@@ -13,7 +16,20 @@ public class UIManager : MonoBehaviour
 
     private void Start()
     {
-        menuPanel.ShowView();
-        gamePlayPanel.HideView();
+        CloseAllPanels();
+        menuPanel.ShowView(); 
+    }
+
+    public void CloseAllPanels()
+    {
+        foreach (var panel in panels) { panel.SetActive(false); }
+    }
+
+    public void RestartGame()
+    {
+        CloseAllPanels(); 
+        gamePlayPanel.ShowView();
+        MatchManager.Instance.ResetSystem();
+        GridManager.Instance.SetGrid();
     }
 }

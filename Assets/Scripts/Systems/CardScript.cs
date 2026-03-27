@@ -14,7 +14,9 @@ public class CardScript : MonoBehaviour
     [SerializeField] CanvasGroup canvasGroup; 
     internal int ID => data.id;
 
-    internal bool isfliped;
+    private bool isfliped; 
+    private bool isMatched;
+    private bool isActive = true;
     private float flipTime = 0.15f;
     
     private CardData data;
@@ -30,16 +32,13 @@ public class CardScript : MonoBehaviour
         img_Original.sprite = data.sprite;
         frontSide.SetActive(false);
         backSide.SetActive(true); 
-        isfliped = false; 
+        isfliped = false; isActive = true;
     }
 
     public void OnClick()
     {
-        if (isfliped)
-        {
-            FlipBack();
-            return;
-        }
+        if (!isActive || isfliped || isMatched)
+            return; 
         StartCoroutine(Flip(true));
         MatchManager.Instance.RegisterCard(this);
     }
@@ -72,6 +71,7 @@ public class CardScript : MonoBehaviour
     }
     public void MatchSuccess()
     {
+        isMatched = true;
         canvasGroup.alpha = 0;
         canvasGroup.blocksRaycasts = false;
         btnClick.interactable = false;

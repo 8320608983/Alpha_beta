@@ -8,7 +8,6 @@ public class MatchManager : MonoBehaviour
 
     private List<CardScript> activeCards = new List<CardScript>();
     private Queue<List<CardScript>> queue = new Queue<List<CardScript>>();
-
     private int totalPairs;
     private int matchedPairs;
     private void Awake()
@@ -60,9 +59,12 @@ public class MatchManager : MonoBehaviour
             {
                 a.MatchSuccess();
                 b.MatchSuccess();
-
                 matchedPairs++;
-                 
+                if (matchedPairs >= totalPairs)
+                {
+                    UIManager.Instance.CloseAllPanels();
+                    UIManager.Instance.gameOverPanel.ShowView();
+                }
 
             }
             else
@@ -73,5 +75,11 @@ public class MatchManager : MonoBehaviour
             }
         }
 
+    }
+    public void ResetSystem()
+    {
+        StopAllCoroutines();     
+        activeCards.Clear();  
+        queue.Clear();    
     }
 }

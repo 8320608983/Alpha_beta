@@ -80,12 +80,10 @@ public class GridManager : MonoBehaviour
         float cardWidth = cardHeight * aspect;
 
         if (cardWidth > cardHeight)
-        {
-        print("cardWidth : " + cardWidth + " > cardHeight : " + cardHeight);
+        { 
             cardHeight = cardWidth / aspect;
             cardWidth = cardHeight /aspect  ;
-        }
-        print("cardWidth : " + cardWidth + " : cardWidth : " + cardHeight);
+        } 
         grid.cellSize = new Vector2(cardWidth, cardHeight);
          
 
@@ -99,6 +97,8 @@ public class GridManager : MonoBehaviour
             Debug.LogError("Not enough CardData in database!");
             return;
         }
+
+        MatchManager.Instance.SetTotalPairs(pairCount);
 
         List<CardData> temp = new List<CardData>(database.cards);
         Shuffle(temp);
