@@ -12,7 +12,7 @@ PlayerSettings:
   targetDevice: 2
   useOnDemandResources: 0
   accelerometerFrequency: 60
-  companyName: DefaultCompany
+  companyName: Beta
   productName: Alpha
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
@@ -163,6 +163,7 @@ PlayerSettings:
   androidSupportedAspectRatio: 1
   androidMaxAspectRatio: 2.4
   applicationIdentifier:
+    Android: com.Beta.Alpha
     Standalone: com.DefaultCompany.3D-Project
   buildNumber:
     Standalone: 0
@@ -928,7 +929,7 @@ PlayerSettings:
   hmiLogStartupTiming: 0
   hmiCpuConfiguration: 
   apiCompatibilityLevel: 6
-  activeInputHandler: 1
+  activeInputHandler: 2
   windowsGamepadBackendHint: 0
   cloudProjectId: 1a6974a6-7493-4872-957b-cea0d990492a
   framebufferDepthMemorylessMode: 0

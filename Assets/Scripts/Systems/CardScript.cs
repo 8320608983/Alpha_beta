@@ -13,14 +13,18 @@ public class CardScript : MonoBehaviour
 
     internal bool isfliped;
     private float flipTime = 0.15f;
+    
+    private CardData data;
 
     private void OnEnable()
     {
         btnClick.onClick.RemoveAllListeners();
         btnClick.onClick.AddListener(OnClick);
     }
-    public void Setup()
-    { 
+    public void Setup(CardData cardData)
+    {
+        data = cardData;
+        img_Original.sprite = data.sprite;
         frontSide.SetActive(false);
         backSide.SetActive(true); 
         isfliped = false; 

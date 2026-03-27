@@ -8,6 +8,7 @@ public class GridManager : MonoBehaviour
     public static GridManager Instance;
     [SerializeField] GridLayoutGroup grid;
     [SerializeField] CardScript cardScript;
+    [SerializeField] CardDatabase database;
 
     [SerializeField] int rows;
     [SerializeField] int cols;
@@ -35,7 +36,7 @@ public class GridManager : MonoBehaviour
     }
     IEnumerator InitGrid()
     {
-        yield return null; // wait for UI layout
+        yield return null;  
 
         LayoutRebuilder.ForceRebuildLayoutImmediate(grid.GetComponent<RectTransform>());
 
@@ -90,13 +91,41 @@ public class GridManager : MonoBehaviour
 
         grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         grid.constraintCount = cols;
-         
-        for (int i = 0; i < rows * cols; i++)
+
+        int totalCells = rows * cols;
+        int pairCount = totalCells / 2;
+        if (database.cards.Count < pairCount)
         {
-            CardScript obj = Instantiate(cardScript, grid.transform);
-            obj.Setup();
+            Debug.LogError("Not enough CardData in database!");
+            return;
         }
 
+        List<CardData> temp = new List<CardData>(database.cards);
+        Shuffle(temp);
 
+        List<CardData> finalList = new List<CardData>();
+
+        for (int i = 0; i < pairCount; i++)
+        {
+            finalList.Add(temp[i]);
+            finalList.Add(temp[i]);
+        }
+
+        Shuffle(finalList);
+        
+        foreach (var data in finalList)
+        {
+            CardScript obj = Instantiate(cardScript, grid.transform);
+            obj.Setup(data);
+        }
+
+    }
+    void Shuffle(List<CardData> list)
+    {
+        for (int i = 0; i < list.Count; i++)
+        {
+            int rand = Random.Range(i, list.Count);
+            (list[i], list[rand]) = (list[rand], list[i]);
+        }
     }
 }
