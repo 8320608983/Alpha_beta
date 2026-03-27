@@ -10,6 +10,7 @@ public class MatchManager : MonoBehaviour
     private Queue<List<CardScript>> queue = new Queue<List<CardScript>>();
     private int totalPairs;
     private int matchedPairs;
+    private bool isProcessing;
     private void Awake()
     {
         if (Instance == null)
@@ -39,13 +40,17 @@ public class MatchManager : MonoBehaviour
             activeCards.RemoveAt(0);
             activeCards.RemoveAt(0);
 
-
-            StartCoroutine(ProcessQueue());
+            if (!isProcessing)
+            {
+                StartCoroutine(ProcessQueue());
+            }
         }
     }
 
     IEnumerator ProcessQueue()
     {
+        isProcessing = true;
+
         while (queue.Count > 0)
         {
             var pair = queue.Dequeue();
@@ -59,27 +64,36 @@ public class MatchManager : MonoBehaviour
             {
                 a.MatchSuccess();
                 b.MatchSuccess();
+                GameEvents.OnMatch?.Invoke();
                 matchedPairs++;
                 if (matchedPairs >= totalPairs)
                 {
-                    UIManager.Instance.CloseAllPanels();
-                    UIManager.Instance.gameOverPanel.ShowView();
+                    StartCoroutine(ShowGameOverDelayed());
                 }
-
             }
             else
             {
+                GameEvents.OnMismatch?.Invoke();
                 a.FlipBack();
                 b.FlipBack();
 
             }
         }
+        isProcessing = false;
 
+    }
+    IEnumerator ShowGameOverDelayed()
+    {
+        yield return new WaitForSeconds(.8f); 
+
+        UIManager.Instance.CloseAllPanels();
+        UIManager.Instance.gameOverPanel.ShowView();
     }
     public void ResetSystem()
     {
         StopAllCoroutines();     
         activeCards.Clear();  
-        queue.Clear();    
+        queue.Clear();
+        isProcessing = false;
     }
 }

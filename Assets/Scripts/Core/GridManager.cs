@@ -30,7 +30,8 @@ public class GridManager : MonoBehaviour
     { 
         rows = rowCount;
         cols = colCount;
-        StartCoroutine(InitGrid());
+        StartCoroutine(InitGrid()); 
+        ScoreManager.Instance.ResetScore();
         UIManager.Instance.menuPanel.HideView();
         UIManager.Instance.gamePlayPanel.ShowView();
     }

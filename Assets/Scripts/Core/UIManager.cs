@@ -30,6 +30,7 @@ public class UIManager : MonoBehaviour
         CloseAllPanels(); 
         gamePlayPanel.ShowView();
         MatchManager.Instance.ResetSystem();
+        ScoreManager.Instance.ResetScore();
         GridManager.Instance.SetGrid();
     }
 }
