@@ -15,6 +15,7 @@ public class GameOverPanel : BaseView
         int FinalScore = ScoreManager.Instance.GetScore();
         finalScore.text = "Final Score: " + FinalScore;
     }
+    
     public void On_Restart_BtnClick()
     {
         UIManager.Instance.RestartGame();

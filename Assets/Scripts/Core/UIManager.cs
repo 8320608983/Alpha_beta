@@ -12,14 +12,7 @@ public class UIManager : MonoBehaviour
     private void Awake()
     {
         if (Instance == null) { Instance = this; }
-    }
-
-    private void Start()
-    {
-        CloseAllPanels();
-        menuPanel.ShowView(); 
-    }
-
+    } 
     public void CloseAllPanels()
     {
         foreach (var panel in panels) { panel.SetActive(false); }
@@ -27,6 +20,7 @@ public class UIManager : MonoBehaviour
 
     public void RestartGame()
     {
+        SaveSystem.Clear();
         CloseAllPanels(); 
         gamePlayPanel.ShowView();
         MatchManager.Instance.ResetSystem();

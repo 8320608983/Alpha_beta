@@ -10,8 +10,8 @@ public class GridManager : MonoBehaviour
     [SerializeField] CardScript cardScript;
     [SerializeField] CardDatabase database;
 
-    [SerializeField] int rows;
-    [SerializeField] int cols;
+    [SerializeField] internal int rows;
+    [SerializeField] internal int cols;
 
     [Header("Card Details")]
     [SerializeField] float heightCard;
@@ -27,7 +27,11 @@ public class GridManager : MonoBehaviour
         GenerateGrid();
     }
     public void StartGame(int rowCount, int colCount)
-    { 
+    {
+        if (!GameManager.isLoadedFromSave)
+        {
+            SaveSystem.Clear();
+        }
         rows = rowCount;
         cols = colCount;
         StartCoroutine(InitGrid()); 

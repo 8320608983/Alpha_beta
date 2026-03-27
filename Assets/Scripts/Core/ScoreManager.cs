@@ -65,4 +65,10 @@ public class ScoreManager : MonoBehaviour
     {
         return score;
     }
+    public void SetScore(int value)
+    {
+        score = value;
+        combo = 0;
+        UpdateUI();
+    }
 }

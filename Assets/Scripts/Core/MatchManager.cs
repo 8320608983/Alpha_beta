@@ -68,6 +68,7 @@ public class MatchManager : MonoBehaviour
                 matchedPairs++;
                 if (matchedPairs >= totalPairs)
                 {
+                    SaveGame();
                     StartCoroutine(ShowGameOverDelayed());
                 }
             }
@@ -82,10 +83,18 @@ public class MatchManager : MonoBehaviour
         isProcessing = false;
 
     }
+    void SaveGame()
+    {
+        GameData data = new GameData(); 
+        data.rows = GridManager.Instance.rows;
+        data.cols = GridManager.Instance.cols;
+
+        SaveSystem.Save(data);
+    }
     IEnumerator ShowGameOverDelayed()
     {
-        yield return new WaitForSeconds(.8f); 
-
+        yield return new WaitForSeconds(.8f);
+        GameEvents.OnGameOver?.Invoke();
         UIManager.Instance.CloseAllPanels();
         UIManager.Instance.gameOverPanel.ShowView();
     }
