@@ -11,6 +11,9 @@ public class CardScript : MonoBehaviour
     [SerializeField] Image img_Original;
     [SerializeField] Button btnClick;
 
+    [SerializeField] CanvasGroup canvasGroup; 
+    internal int ID => data.id;
+
     internal bool isfliped;
     private float flipTime = 0.15f;
     
@@ -38,6 +41,7 @@ public class CardScript : MonoBehaviour
             return;
         }
         StartCoroutine(Flip(true));
+        MatchManager.Instance.RegisterCard(this);
     }
     IEnumerator Flip(bool showFront)
     {
@@ -65,5 +69,11 @@ public class CardScript : MonoBehaviour
     public void FlipBack()
     {
         StartCoroutine(Flip(false));
+    }
+    public void MatchSuccess()
+    {
+        canvasGroup.alpha = 0;
+        canvasGroup.blocksRaycasts = false;
+        btnClick.interactable = false;
     }
 }
