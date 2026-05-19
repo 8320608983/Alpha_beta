@@ -1,0 +1,965 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class CameraFollow : MonoBehaviour
+{
+    [SerializeField] Transform target;
+    [SerializeField] Vector3 offset = new Vector3(0f,5f,-8f);
+    [SerializeField] float smoothSpeed = 10f;
+
+    private void LateUpdate()
+    {
+        transform.position = Vector3.Lerp(transform.position, offset + target.position, smoothSpeed* Time.deltaTime);
+        Vector3 lookPos = target.position + Vector3.forward * 5f;
+        transform.LookAt(lookPos);
+    }
+}
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Coin : MonoBehaviour
+{
+    internal Transform player;
+    float Diffrence = 20;
+    bool collected;
+
+    private void OnEnable()
+    {
+        collected = false;
+    }
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("Player"))
+        {
+            //print("Coin ++"); 
+            collected = true;
+
+            GameEvents.OnCoinCollect?.Invoke(1);
+            CoinPool.Instance.ReturnPool(this);
+        }
+    }
+    private void Update()
+    {
+        if (transform.position.z < player.transform.position.z - Diffrence)
+        {
+            CoinPool.Instance.ReturnPool(this);
+        }
+    }
+}
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class CoinPool : MonoBehaviour
+{
+    public static CoinPool Instance;
+    public Coin prefab;
+    public int poolSize;
+    Queue<Coin> coins = new Queue<Coin>();
+    List<Coin> activeCoins = new List<Coin>();
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+        GeneratePool();
+    }
+
+    private void GeneratePool()
+    {
+        for (int i = 0; i < poolSize; i++)
+        {
+            Coin c = Instantiate(prefab, transform);
+            c.gameObject.SetActive(false);
+            coins.Enqueue(c); activeCoins.Add(c);
+        }
+    }
+    public Coin GetCoin()
+    {
+        Coin c;
+        if (coins.Count > 0)
+        {
+            c = coins.Dequeue();
+        }
+        else
+        {
+            c = Instantiate(prefab, transform);
+        }
+        activeCoins.Add(c);
+        c.gameObject.SetActive(true);
+        return c;
+    }
+
+    public void ReturnPool(Coin c)
+    {
+        coins.Enqueue(c); activeCoins.Remove(c);
+        c.gameObject.SetActive(false);
+    }
+    public void ResetPool()
+    {
+        foreach (Coin c in activeCoins.ToArray())
+        {
+            ReturnPool(c);
+        }
+
+        activeCoins.Clear();
+    }
+}
+using UnityEngine;
+
+public class CoinSpawner : MonoBehaviour
+{
+    public Transform player;
+
+    public float startingDistance = 20f;
+    public float difference = 10f;
+
+    public int initialSpawnCount = 10;
+
+    float lastPosZ;
+
+    int laneCount => player.GetComponent<PlayerMovement>().laneCount;
+    float laneDistance => player.GetComponent<PlayerMovement>().laneDistance;
+
+    private void OnEnable()
+    {
+        GameEvents.OnGameStart += StartSpawner;
+        GameEvents.OnGameReset += StartSpawner;
+    }
+
+    private void OnDisable()
+    {
+        GameEvents.OnGameStart -= StartSpawner;
+        GameEvents.OnGameReset -= StartSpawner;
+    }
+
+    void StartSpawner()
+    {
+        CoinPool.Instance.ResetPool();
+
+        lastPosZ = player.position.z + startingDistance;
+
+        for (int i = 0; i < initialSpawnCount; i++)
+        {
+            SpawnCoin();
+        }
+    }
+
+    void Update()
+    {
+        if (!GameManager.Instance.IsGameRunning) return;
+
+        if (player.position.z > lastPosZ - startingDistance)
+        {
+            SpawnCoin();
+        }
+    }
+
+    void SpawnCoin()
+    {
+        int lane = Random.Range(0, laneCount);
+
+        Coin c = CoinPool.Instance.GetCoin();
+
+        c.transform.position = new Vector3(GetX(lane), 1, lastPosZ);
+
+        c.player = player;
+
+        lastPosZ += difference;
+    }
+
+    float GetX(int lane)
+    {
+        float midLane = (laneCount - 1) / 2f;
+
+        return (midLane - lane) * laneDistance;
+    }
+}using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class GameEvents : MonoBehaviour
+{
+    public static Action OnGameStart;
+    public static Action OnGameEnd;
+    public static Action<int> OnCoinCollect;
+    public static Action<float> OnDistanceChanged;
+    public static Action OnGameReset;
+}
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class GameManager : MonoBehaviour
+{
+    public static GameManager Instance;
+    public PlayerMovement player;
+    public bool IsGameRunning { get; private set; }
+    public bool IsGameOver { get; private set; }
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+    }
+    private void Start()
+    {
+        GameStart();
+    }
+
+    private void GameStart()
+    {
+        IsGameOver = false;
+        IsGameRunning = true;
+        GameEvents.OnGameStart?.Invoke();
+    }
+
+    internal void GameOver()
+    {
+        if (IsGameOver) return;
+        print("GameOver");
+        IsGameRunning = false; IsGameOver = true;   
+        GameEvents.OnGameEnd?.Invoke(); 
+    }
+    public void ResetGame()
+    {
+        CoinPool.Instance.ResetPool();
+        ObstPool.Instance.ResetPool();
+
+        GameEvents.OnGameReset?.Invoke();
+
+        GameStart();
+    }
+    
+}
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Obstacle : MonoBehaviour
+{
+    internal Transform player;
+    float Diffrence = 20;
+    private void Update()
+    {
+        if(transform.position.z < player.position.z - Diffrence)
+        {
+            ObstPool.Instance.ReturnObstacle(this);
+        }
+    }
+   
+}
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class ObstPool : MonoBehaviour
+{
+    public static ObstPool Instance;
+    public Obstacle obstacle;
+    public int poolsize = 20;
+    Queue<Obstacle> obstacleQueue = new Queue<Obstacle>();
+    List<Obstacle> activeObstacles = new List<Obstacle>();
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+        CreatePool();
+    }
+
+    private void CreatePool()
+    {
+        for (int i = 0; i < poolsize; i++)
+        {
+            Obstacle obs = Instantiate(obstacle, transform);
+            obs.gameObject.SetActive(false);
+            obstacleQueue.Enqueue(obs); 
+            activeObstacles.Add(obs);
+        }
+    }
+
+    public Obstacle GetObstacle()
+    {
+        Obstacle obst;
+        if (obstacleQueue.Count > 0)
+        {
+            obst = obstacleQueue.Dequeue();
+        }
+        else
+        {
+            obst = Instantiate(obstacle, transform);
+        }
+        activeObstacles.Add(obst);
+        obst.gameObject.SetActive(true);
+        return obst;
+    }
+    public void ReturnObstacle(Obstacle obstacle)
+    {
+        obstacleQueue.Enqueue(obstacle);
+        activeObstacles.Remove(obstacle);
+        obstacle.gameObject.SetActive(false);
+    }
+    public void ResetPool()
+    {
+        foreach (Obstacle o in activeObstacles.ToArray())
+        {
+            ReturnObstacle(o);
+        }
+
+        activeObstacles.Clear();
+    }
+}
+using UnityEngine;
+
+public class ObstSpawner : MonoBehaviour
+{
+    public Transform player;
+
+    public float firstSpawnPos = 50f;
+    public float difference = 15f;
+
+    public int initialSpawnCount = 10;
+
+    float lastspawnPosZ;
+
+    int laneCount => player.GetComponent<PlayerMovement>().laneCount;
+    float laneDistance => player.GetComponent<PlayerMovement>().laneDistance;
+
+    private void OnEnable()
+    {
+        GameEvents.OnGameStart += StartSpawner;
+        GameEvents.OnGameReset += StartSpawner;
+    }
+
+    private void OnDisable()
+    {
+        GameEvents.OnGameStart -= StartSpawner;
+        GameEvents.OnGameReset -= StartSpawner;
+    }
+
+    void StartSpawner()
+    {
+        ObstPool.Instance.ResetPool();
+
+        lastspawnPosZ = player.position.z + firstSpawnPos;
+
+        for (int i = 0; i < initialSpawnCount; i++)
+        {
+            SpawnObstacle();
+        }
+    }
+
+    void Update()
+    {
+        if (!GameManager.Instance.IsGameRunning) return;
+
+        if (player.position.z > lastspawnPosZ - firstSpawnPos)
+        {
+            SpawnObstacle();
+        }
+    }
+
+    void SpawnObstacle()
+    {
+        int lane = Random.Range(0, laneCount);
+
+        Obstacle obs = ObstPool.Instance.GetObstacle();
+
+        obs.player = player;
+
+        obs.transform.position = new Vector3(
+            GetLaneX(lane),
+            1,
+            lastspawnPosZ
+        );
+
+        lastspawnPosZ += difference;
+    }
+
+    float GetLaneX(int lane)
+    {
+        float midLane = (laneCount - 1) / 2f;
+
+        return (lane - midLane) * laneDistance;
+    }
+}using UnityEngine;
+
+public class PlayerMovement : MonoBehaviour
+{
+
+    float forwardSpeed = 10f;
+    float startSpeedRate = 0.2f;
+    float laneChnageSpeed = 12f;
+    internal int laneCount = 5;
+    internal float laneDistance = 2f;
+
+    int currentLaneIndex;
+    CharacterController characterController;
+    Vector3 startpos, velocity;
+    bool canMove;
+    float jumpForce = 10f;
+    float gravity = -20f;
+
+    private void Awake()
+    {
+        characterController = GetComponent<CharacterController>();
+    }
+    private void OnEnable()
+    {
+        GameEvents.OnGameStart += EnableMovement;
+        GameEvents.OnGameEnd += DisableMovement;
+        GameEvents.OnGameReset += ResetPlayer;
+    }
+
+    private void OnDisable()
+    {
+        GameEvents.OnGameStart -= EnableMovement;
+        GameEvents.OnGameEnd -= DisableMovement;
+        GameEvents.OnGameReset -= ResetPlayer;
+    }
+
+    void EnableMovement()
+    {
+        canMove = true;
+    }
+
+    void DisableMovement()
+    {
+        canMove = false;
+    }
+
+    void ResetPlayer()
+    {
+        characterController.enabled = false;
+        transform.position = startpos;
+        velocity = Vector3.zero;
+        forwardSpeed = 8f;
+        currentLaneIndex = laneCount / 2;
+        characterController.enabled = true;
+    }
+    private void Start()
+    {
+        startpos = transform.position;
+        currentLaneIndex = laneCount / 2;
+        print("Lane Index : " + currentLaneIndex);
+    }
+    private void Update()
+    {
+        if (!canMove) return;
+
+        forwardSpeed = forwardSpeed + startSpeedRate * Time.deltaTime;
+
+        Vector3 move = Vector3.forward * forwardSpeed;
+
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            ChangeLane(-1);
+        }
+
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            ChangeLane(1);
+        }
+
+        if (characterController.isGrounded)
+        {
+            velocity.y = -1f;
+
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                velocity.y = jumpForce;
+            }
+        }
+        else
+        {
+            velocity.y += gravity * Time.deltaTime;
+        }
+
+        float targetX = GetValueX(currentLaneIndex);
+        float distanceX = targetX - transform.position.x;
+
+        move.x = distanceX * laneChnageSpeed;
+
+        characterController.Move((move + velocity) * Time.deltaTime);
+
+        GameEvents.OnDistanceChanged?.Invoke(transform.position.z);
+    }
+
+    private float GetValueX(int LaneIndex)
+    {
+        float middleLane = (laneCount - 1) / 2;
+        return (LaneIndex - middleLane) * laneDistance;
+    }
+
+    private void ChangeLane(int laneIndex)
+    {
+        currentLaneIndex = currentLaneIndex + laneIndex;
+        currentLaneIndex = Mathf.Clamp(currentLaneIndex, 0, laneCount - 1);
+    }
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        if (hit.gameObject.CompareTag("Obstacle"))
+        {
+            if (!GameManager.Instance.IsGameOver)
+            {
+
+                //print("GameOver");
+                GameManager.Instance.GameOver();
+            }
+        }
+    }
+}
+using JetBrains.Annotations;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class ScoreManager : MonoBehaviour
+{ 
+        public static ScoreManager instance;
+
+        public int coin;
+        public float distance;
+
+        private void Awake()
+        {
+            instance = this;
+        }
+
+        private void OnEnable()
+        {
+            GameEvents.OnCoinCollect += AddCoin;
+            GameEvents.OnDistanceChanged += UpdateDistance;
+            GameEvents.OnGameReset += ResetScore;
+        }
+
+        private void OnDisable()
+        {
+            GameEvents.OnCoinCollect -= AddCoin;
+            GameEvents.OnDistanceChanged -= UpdateDistance;
+            GameEvents.OnGameReset -= ResetScore;
+        }
+
+        void AddCoin(int amount)
+        {
+            coin += amount;
+            UIManager.Instance.UpdateCoins(coin);
+        }
+
+        void UpdateDistance(float dis)
+        {
+            distance = dis;
+        }
+
+        void ResetScore()
+        {
+            coin = 0;
+            distance = 0;
+        }
+   
+}
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Tile : MonoBehaviour
+{
+     
+}
+using System.Collections.Generic;
+using UnityEngine;
+
+public class TilePool : MonoBehaviour
+{
+    public static TilePool Instance;
+    public Tile prefab;
+    public int poolAmount;
+    Queue<Tile> queueTile = new Queue<Tile>();
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+        GeneratePool();
+    }
+
+    private void GeneratePool()
+    {
+        for (int i = 0; i < poolAmount; i++)
+        {
+            Tile t = Instantiate(prefab, transform);
+            t.gameObject.SetActive(false);
+            queueTile.Enqueue(t);
+        }
+    }
+    public Tile GetTile()
+    {
+        Tile t;
+        if (queueTile.Count > 0)
+        {
+            t = queueTile.Dequeue();
+        }
+        else
+        {
+            t = Instantiate(prefab, transform);
+        }
+        t.gameObject.SetActive(true);
+        return t;
+    }
+    public void SendBack(Tile tile)
+    {
+        tile.gameObject.SetActive(false);
+        queueTile.Enqueue(tile);
+    }
+
+}
+using System.Collections.Generic;
+using UnityEngine;
+
+public class TileSpawner : MonoBehaviour
+{
+    public Transform player;
+
+    public int onScreenTileAmount = 7;
+    public float tileLength = 30f;
+
+    float spawnZ = 0;
+
+    List<Tile> activeTiles = new List<Tile>();
+
+    private void OnEnable()
+    {
+        GameEvents.OnGameStart += StartSpawn;
+        GameEvents.OnGameReset += ResetTiles;
+    }
+
+    private void OnDisable()
+    {
+        GameEvents.OnGameStart -= StartSpawn;
+        GameEvents.OnGameReset -= ResetTiles;
+    }
+
+    void StartSpawn()
+    {
+        ClearTiles();
+
+        spawnZ = 0;
+
+        for (int i = 0; i < onScreenTileAmount; i++)
+        {
+            SpawnTile();
+        }
+    }
+
+    void SpawnTile()
+    {
+        Tile t = TilePool.Instance.GetTile();
+
+        t.transform.position = new Vector3(0, 0, spawnZ);
+
+        spawnZ += tileLength;
+
+        activeTiles.Add(t);
+    }
+
+    void Update()
+    {
+        if (!GameManager.Instance.IsGameRunning) return;
+
+        if (player.position.z - 20f > spawnZ - (onScreenTileAmount * tileLength))
+        {
+            SpawnTile();
+            RemoveOldTile();
+        }
+    }
+
+    void RemoveOldTile()
+    {
+        Tile oldTile = activeTiles[0];
+
+        activeTiles.RemoveAt(0);
+
+        TilePool.Instance.SendBack(oldTile);
+    }
+
+    void ResetTiles()
+    {
+        StartSpawn();
+    }
+
+    void ClearTiles()
+    {
+        foreach (Tile t in activeTiles)
+        {
+            TilePool.Instance.SendBack(t);
+        }
+
+        activeTiles.Clear();
+    }
+}using System;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class UIManager : MonoBehaviour
+{
+    public Text txt_Distance, txt_Coin;
+    public GameObject gameOverPanel;
+    public static UIManager Instance;
+    private void Awake()
+    {
+        if(Instance == null) Instance = this;
+    }
+    private void OnEnable()
+    {
+        GameEvents.OnGameReset += OnGameStart;
+        GameEvents.OnGameStart += OnGameStart;
+        GameEvents.OnGameEnd += OnGameOver;
+        GameEvents.OnDistanceChanged += UpdateDistance; 
+    }
+    private void OnDisable()
+    {
+        GameEvents.OnGameStart -= OnGameStart;
+        GameEvents.OnGameEnd -= OnGameOver;
+        GameEvents.OnDistanceChanged -= UpdateDistance; 
+    }
+
+    internal void UpdateCoins(int coin)
+    {
+        if (ScoreManager.instance == null) return;
+        txt_Coin.text = "Coins: " + ScoreManager.instance.coin;
+    }
+
+    private void UpdateDistance(float distance)
+    {
+        if (ScoreManager.instance == null) return;
+        txt_Distance.text = "Distance: " + Mathf.FloorToInt(distance);
+    }
+
+    private void OnGameOver()
+    { 
+        gameOverPanel.SetActive(true);
+    }
+
+    private void OnGameStart()
+    {
+        gameOverPanel.SetActive(false);
+        txt_Distance.text = "Distance: 0";
+        txt_Coin.text = "Coins: 0";
+    }
+}
+
+using UnityEngine;
+
+[RequireComponent(typeof(Rigidbody))]
+public class PlayerMovement : MonoBehaviour
+{
+    [Header("Forward Movement")]
+    [SerializeField] float forwardSpeed = 10f;
+    [SerializeField] float speedIncreaseRate = 0.2f;
+
+    [Header("Lane Movement")]
+    [SerializeField] float laneChangeSpeed = 10f;
+    internal int laneCount = 5;
+    internal float laneDistance = 2f;
+
+    [Header("Jump")]
+    [SerializeField] float jumpForce = 7f;
+
+    Rigidbody rb;
+
+    int currentLaneIndex;
+
+    Vector3 startPos;
+
+    bool canMove;
+    bool isGrounded;
+
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+
+        // Prevent player from falling sideways
+        rb.constraints =
+            RigidbodyConstraints.FreezeRotationX |
+            RigidbodyConstraints.FreezeRotationZ;
+    }
+
+    private void Start()
+    {
+        startPos = transform.position;
+
+        currentLaneIndex = laneCount / 2;
+    }
+
+    private void OnEnable()
+    {
+        GameEvents.OnGameStart += EnableMovement;
+        GameEvents.OnGameEnd += DisableMovement;
+        GameEvents.OnGameReset += ResetPlayer;
+    }
+
+    private void OnDisable()
+    {
+        GameEvents.OnGameStart -= EnableMovement;
+        GameEvents.OnGameEnd -= DisableMovement;
+        GameEvents.OnGameReset -= ResetPlayer;
+    }
+
+    void EnableMovement()
+    {
+        canMove = true;
+    }
+
+    void DisableMovement()
+    {
+        canMove = false;
+
+        rb.velocity = Vector3.zero;
+    }
+
+    void ResetPlayer()
+    {
+        rb.velocity = Vector3.zero;
+
+        transform.position = startPos;
+
+        forwardSpeed = 10f;
+
+        currentLaneIndex = laneCount / 2;
+    }
+
+    private void Update()
+    {
+        if (!canMove) return;
+
+        HandleInput();
+
+        GameEvents.OnDistanceChanged?.Invoke(transform.position.z);
+    }
+
+    private void FixedUpdate()
+    {
+        if (!canMove) return;
+
+        MoveForward();
+
+        HandleLaneMovement();
+    }
+
+    void HandleInput()
+    {
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            ChangeLane(-1);
+        }
+
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            ChangeLane(1);
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+        {
+            Jump();
+        }
+    }
+
+    void MoveForward()
+    {
+        forwardSpeed += speedIncreaseRate * Time.fixedDeltaTime;
+
+        Vector3 velocity = rb.velocity;
+
+        velocity.z = forwardSpeed;
+
+        rb.velocity = velocity;
+    }
+
+    void HandleLaneMovement()
+    {
+        float targetX = GetLanePositionX(currentLaneIndex);
+
+        float difference = targetX - transform.position.x;
+
+        Vector3 velocity = rb.velocity;
+
+        velocity.x = difference * laneChangeSpeed;
+
+        rb.velocity = velocity;
+    }
+
+    void Jump()
+    {
+        rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+
+        isGrounded = false;
+    }
+
+    float GetLanePositionX(int laneIndex)
+    {
+        float middleLane = (laneCount - 1) / 2f;
+
+        return (laneIndex - middleLane) * laneDistance;
+    }
+
+    void ChangeLane(int direction)
+    {
+        currentLaneIndex += direction;
+
+        currentLaneIndex = Mathf.Clamp(
+            currentLaneIndex,
+            0,
+            laneCount - 1
+        );
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Ground"))
+        {
+            isGrounded = true;
+        }
+
+        if (collision.gameObject.CompareTag("Obstacle"))
+        {
+            if (!GameManager.Instance.IsGameOver)
+            {
+                GameManager.Instance.GameOver();
+            }
+        }
+    }
+}
+Also setup player properly in Unity:
+
+Remove
+    CharacterController 
+
+Add
+    Rigidbody
+    CapsuleCollider
+
+Rigidbody Settings
+    Mass = 1
+    Drag = 0
+    Angular Drag = 0.05
+    Use Gravity = TRUE
+    Interpolate = Interpolate
+    Collision Detection = Continuous
+
+Freeze Rotation
+    Freeze:
+        X
+        Z
+
+Ground Object
+Ground tiles must have:
+    Collider
+    Tag = "Ground"
+
+Obstacle Object
+Obstacle prefab must have:
+    Collider
+    Tag = "Obstacle"
